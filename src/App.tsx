@@ -4,17 +4,19 @@ import { MoviesList } from './components/MoviesList';
 import { NewMovie } from './components/NewMovie';
 import moviesFromServer from './api/movies.json';
 
-export const App = () => {
-  const [movies, setMovies] = useState(moviesFromServer);
+export interface Movie {
+  title: string;
+  description: string;
+  imgUrl: string;
+  imdbUrl: string;
+  imdbId: string;
+}
 
-  const handleAddMovie = (newMovie: {
-    title: string;
-    description: string;
-    imgUrl: string;
-    imdbUrl: string;
-    imdbId: string;
-  }) => {
-    setMovies(prevMovies => [...prevMovies, { ...newMovie, id: +new Date() }]);
+export const App = () => {
+  const [movies, setMovies] = useState<Movie[]>(moviesFromServer);
+
+  const handleAddMovie = (newMovie: Movie) => {
+    setMovies(previousMovies => [...previousMovies, { ...newMovie }]);
   };
 
   return (
