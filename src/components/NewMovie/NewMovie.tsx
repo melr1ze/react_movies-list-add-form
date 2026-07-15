@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { TextField } from '../TextField';
-import { Movie } from '../../App';
 
-const URL_REGEX = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
-
-interface Props {
-  onAdd: (newMovie: Movie) => void;
-}
+// Припустимо, що компонент приймає функцію onAdd для додавання фільму в загальний список
+type Props = {
+  onAdd: (movie: {
+    title: string;
+    description: string;
+    imgUrl: string;
+    imdbUrl: string;
+    imdbId: string;
+  }) => void;
+};
 
 export const NewMovie: React.FC<Props> = ({ onAdd }) => {
+  const [count, setCount] = useState(0);
   const [movie, setMovie] = useState({
     title: '',
     description: '',
@@ -17,84 +22,70 @@ export const NewMovie: React.FC<Props> = ({ onAdd }) => {
     imdbId: '',
   });
 
-  const [errors, setErrors] = useState({
-    title: '',
-    imgUrl: '',
-    imdbUrl: '',
-  });
-
-  const validateUrl = (value: string) => {
-    if (!value) {
-      return 'Field is required';
-    }
-
-    if (!URL_REGEX.test(value)) {
-      return 'Please enter a valid URL';
-    }
-
-    return '';
+  const handleChange = (field: string, value: string) => {
+    setMovie(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleChange = (name: string, newValue: string) => {
-    setMovie(previousMovie => ({
-      ...previousMovie,
-      [name]: newValue,
-    }));
-
-    let errorText = '';
-
-    if (name === 'imgUrl' || name === 'imdbUrl') {
-      errorText = validateUrl(newValue);
-    } else if (!newValue) {
-      errorText = 'Field is required';
-    }
-
-    setErrors(previousErrors => ({
-      ...previousErrors,
-      [name]: errorText,
-    }));
-  };
+  // Перевіряємо, чи всі обов'язкові поля заповнені (без урахування пробілів)
+  const isFormInvalid =
+    !movie.title.trim() ||
+    !movie.imgUrl.trim() ||
+    !movie.imdbUrl.trim() ||
+    !movie.imdbId.trim();
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    const imgUrlError = validateUrl(movie.imgUrl);
-    const imdbUrlError = validateUrl(movie.imdbUrl);
-    const titleError = movie.title ? '' : 'Field is required';
-
-    if (imgUrlError || imdbUrlError || titleError) {
-      setErrors({
-        title: titleError,
-        imgUrl: imgUrlError,
-        imdbUrl: imdbUrlError,
-      });
-
+    if (isFormInvalid) {
       return;
     }
 
-    onAdd(movie);
+    // Передаємо копію об'єкта з обрізаними пробілами
+    onAdd({
+      title: movie.title.trim(),
+      description: movie.description.trim(),
+      imgUrl: movie.imgUrl.trim(),
+      imdbUrl: movie.imdbUrl.trim(),
+      imdbId: movie.imdbId.trim(),
+    });
+
+    // Очищаємо форму
+    setMovie({
+      title: '',
+      description: '',
+      imgUrl: '',
+      imdbUrl: '',
+      imdbId: '',
+    });
+
+    // Збільшуємо count, щоб перемонтувати форму і скинути помилки у TextField
+    setCount(prev => prev + 1);
   };
 
   return (
-    <form className="NewMovie" onSubmit={handleSubmit}>
+    <form className="NewMovie" key={count} onSubmit={handleSubmit}>
       <h2 className="title">Add a movie</h2>
 
       <TextField
         name="title"
         label="Title"
         value={movie.title}
-        // Используем newValue вместо сокращений по чеклисту
-        onChange={newValue => handleChange('title', newValue)}
-        errorMessage={errors.title}
+        onChange={value => handleChange('title', value)}
         required
+      />
+
+      <TextField
+        name="description"
+        label="Description"
+        value={movie.description}
+        onChange={value => handleChange('description', value)}
       />
 
       <TextField
         name="imgUrl"
         label="Image URL"
         value={movie.imgUrl}
-        onChange={newValue => handleChange('imgUrl', newValue)}
-        errorMessage={errors.imgUrl}
+        onChange={value => handleChange('imgUrl', value)}
         required
       />
 
@@ -102,14 +93,30 @@ export const NewMovie: React.FC<Props> = ({ onAdd }) => {
         name="imdbUrl"
         label="Imdb URL"
         value={movie.imdbUrl}
-        onChange={newValue => handleChange('imdbUrl', newValue)}
-        errorMessage={errors.imdbUrl}
+        onChange={value => handleChange('imdbUrl', value)}
         required
       />
 
-      <button type="submit" className="button is-primary">
-        Add
-      </button>
+      <TextField
+        name="imdbId"
+        label="Imdb ID"
+        value={movie.imdbId}
+        onChange={value => handleChange('imdbId', value)}
+        required
+      />
+
+      <div className="field is-grouped">
+        <div className="control">
+          <button
+            type="submit"
+            data-cy="submit-button"
+            className="button is-link"
+            disabled={isFormInvalid}
+          >
+            Add
+          </button>
+        </div>
+      </div>
     </form>
   );
 };
